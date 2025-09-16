@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система отслеживания метакомпетенций</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .card { margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .chart-container { position: relative; height: 300px; }
+        .login-form { max-width: 400px; margin: 100px auto; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Метакомпетенции</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" id="teacherLink"><i class="fas fa-chalkboard-teacher"></i> Преподаватель</a>
+                <a class="nav-link" href="#" id="studentLink"><i class="fas fa-user-graduate"></i> Ученик</a>
+                <a class="nav-link" href="#" id="logoutLink" style="display: none;"><i class="fas fa-sign-out-alt"></i> Выйти</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Форма входа -->
+        <div id="loginPage">
+            <div class="card login-form">
+                <div class="card-body">
+                    <h3 class="card-title text-center">Вход в систему</h3>
+                    <div class="mb-3">
+                        <label class="form-label">Логин</label>
+                        <input type="text" class="form-control" id="username">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="password">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="login()">Войти</button>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="showTeacherView()">Вход для преподавателя</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Интерфейс преподавателя -->
+        <div id="teacherView" class="hidden">
+            <h2 class="mb-4">Панель преподавателя</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Добавить ученика</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" id="newStudentName" placeholder="ФИО ученика">
+                            </div>
+                            <div class="mb-3">
+                                <input type="text" class="form-control" id="newStudentGroup" placeholder="Группа">
+                            </div>
+                            <button class="btn btn-success" onclick="addStudent()">Добавить</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Добавить баллы</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <select class="form-select" id="scoreStudent"></select>
+                            </div>
+                            <div class="mb-3">
+                                <select class="form-select" id="scorePeriod">
+                                    <option value="сентябрь-октябрь 2025">сентябрь-октябрь 2025</option>
+                                    <option value="ноябрь-декабрь 2025">ноябрь-декабрь 2025</option>
+                                    <option value="январь-февраль 2026">январь-февраль 2026</option>
+                                    <option value="март-май 2026">март-май 2026</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <select class="form-select" id="scoreCategory">
+                                    <option value="Критическое мышление">Критическое мышление</option>
+                                    <option value="Эмоциональный интеллект">Эмоциональный интеллект</option>
+                                    <option value="Командная работа">Командная работа</option>
+                                    <option value="Креативность">Креативность</option>
+                                    <option value="Цифровая грамотность">Цифровая грамотность</option>
+                                    <option value="Проектное мышление">Проектное мышление</option>
+                                    <option value="Рефлексия">Рефлексия</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <input type="number" class="form-control" id="scorePoints" placeholder="Баллы">
+                            </div>
+                            <button class="btn btn-success" onclick="addScore()">Добавить баллы</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Список учеников</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ФИО</th>
+                                <th>Группа</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsList"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Статистика группы</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="groupChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Интерфейс ученика -->
+        <div id="studentView" class="hidden">
+            <h2 class="mb-4">Мои метакомпетенции</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Мой прогресс</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Мои баллы по категориям</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Детализация баллов</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Период</th>
+                                <th>Категория</th>
+                                <th>Баллы</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
