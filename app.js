@@ -1,5 +1,5 @@
 // Конфигурация
-const API_URL = 'https://script.google.com/macros/s/AKfycbxG8UrYwp0MZdi-14DUX_Azi00y2WxPZtoL50eGaodi0--h_Qp7d9lf2lvxT52_qfXZFA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxG8UrYwp0MZdi-14DUX_Azi00y2WxPZtoL50eGaodi0--h_Qp7d9lf2lvxT52_qfXZFA';
 
 // Глобальные переменные
 let currentUser = null;
