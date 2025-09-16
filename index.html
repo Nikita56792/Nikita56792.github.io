@@ -135,6 +135,13 @@
             right: 20px;
             z-index: 9999;
         }
+        
+        .admin-settings {
+            background-color: #f8f9fc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -161,6 +168,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-view="githubConfigView">
                             <i class="fab fa-github me-2"></i>Настройки GitHub
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-view="adminSettingsView">
+                            <i class="fas fa-cog me-2"></i>Настройки администратора
                         </a>
                     </li>
                     <li class="nav-item mt-4">
@@ -195,15 +207,19 @@
                                 <h3 class="card-title text-center mb-4">Вход в систему</h3>
                                 <div class="mb-3">
                                     <label class="form-label">Логин</label>
-                                    <input type="text" class="form-control" id="username">
+                                    <input type="text" class="form-control" id="username" placeholder="Введите логин">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Пароль</label>
-                                    <input type="password" class="form-control" id="password">
+                                    <input type="password" class="form-control" id="password" placeholder="Введите пароль">
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">Запомнить меня</label>
                                 </div>
                                 <button class="btn btn-primary w-100 mb-3" onclick="login()">Войти</button>
-                                <div class="text-center">
-                                    <a href="#" onclick="showTeacherView()">Вход для преподавателя</a>
+                                <div class="text-center text-muted">
+                                    <small>Для входа преподавателя используйте логин "admin" и пароль "admin"</small>
                                 </div>
                             </div>
                         </div>
@@ -247,11 +263,44 @@
                                         <input type="text" class="form-control" id="githubFile" value="data.json" placeholder="data.json">
                                     </div>
                                     
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-primary" onclick="saveGithubConfig()">Сохранить настройки</button>
-                                        <button class="btn btn-info" onclick="testGithubConnection()">Проверить подключение</button>
-                                        <button class="btn btn-success" onclick="loadFromGitHub()">Загрузить данные</button>
-                                        <button class="btn btn-warning" onclick="saveToGitHub()">Сохранить данные</button>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button class="btn btn-primary mb-2" onclick="saveGithubConfig()">Сохранить настройки</button>
+                                        <button class="btn btn-info mb-2" onclick="testGithubConnection()">Проверить подключение</button>
+                                        <button class="btn btn-success mb-2" onclick="loadFromGitHub()">Загрузить данные</button>
+                                        <button class="btn btn-warning mb-2" onclick="saveToGitHub()">Сохранить данные</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Настройки администратора -->
+                <div id="adminSettingsView" class="hidden">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-cog me-2"></i>Настройки администратора
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="admin-settings">
+                                        <h5>Смена пароля администратора</h5>
+                                        <div class="mb-3">
+                                            <label class="form-label">Текущий пароль</label>
+                                            <input type="password" class="form-control" id="currentAdminPassword" placeholder="Введите текущий пароль">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Новый пароль</label>
+                                            <input type="password" class="form-control" id="newAdminPassword" placeholder="Введите новый пароль">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Повторите новый пароль</label>
+                                            <input type="password" class="form-control" id="confirmAdminPassword" placeholder="Повторите новый пароль">
+                                        </div>
+                                        <button class="btn btn-primary" onclick="changeAdminPassword()">Сменить пароль</button>
                                     </div>
                                 </div>
                             </div>
@@ -411,6 +460,7 @@
         // Конфигурация приложения
         const APP_KEY = 'metacompetencies_tracker';
         const GITHUB_CONFIG_KEY = 'github_config';
+        const REMEMBER_ME_KEY = 'remember_me';
         
         // Глобальные переменные
         let currentUser = null;
@@ -422,32 +472,31 @@
         // Функции для работы с UTF-8 и Base64
         function utf8ToBase64(str) {
             try {
-                // Если строка содержит не-Latin1 символы, используем TextEncoder
-                if (/[^\x00-\xFF]/.test(str)) {
-                    const encoder = new TextEncoder();
-                    const bytes = encoder.encode(str);
-                    const binString = Array.from(bytes, byte => String.fromCharCode(byte)).join("");
-                    return btoa(binString);
-                } else {
-                    // Для строк только с Latin1 символами используем обычный btoa
-                    return btoa(str);
+                // Кодируем строку в UTF-8 перед преобразованием в Base64
+                const utf8Bytes = new TextEncoder().encode(str);
+                let binary = '';
+                for (let i = 0; i < utf8Bytes.length; i++) {
+                    binary += String.fromCharCode(utf8Bytes[i]);
                 }
+                return btoa(binary);
             } catch (e) {
                 console.error("Ошибка преобразования в Base64:", e);
-                // Резервный метод для старых браузеров
+                // Альтернативный метод для старых браузеров
                 return btoa(unescape(encodeURIComponent(str)));
             }
         }
         
         function base64ToUtf8(base64) {
             try {
-                const binString = atob(base64);
-                const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0));
-                const decoder = new TextDecoder();
-                return decoder.decode(bytes);
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
             } catch (e) {
                 console.error("Ошибка преобразования из Base64:", e);
-                // Резервный метод для старых браузеров
+                // Альтернативный метод для старых браузеров
                 return decodeURIComponent(escape(atob(base64)));
             }
         }
@@ -457,6 +506,9 @@
             // Загрузка данных из локального хранилища
             loadFromLocalStorage();
             loadGithubConfig();
+            
+            // Проверка запомненных данных для автоматического входа
+            checkRememberedLogin();
             
             // Настройка навигации
             document.querySelectorAll('[data-view]').forEach(link => {
@@ -475,19 +527,22 @@
             document.getElementById('sidebarToggle').addEventListener('click', function() {
                 document.getElementById('sidebar').classList.toggle('hidden');
             });
-            
-            // Показать страницу входа по умолчанию
-            showLoginView();
-            
-            // Автоматическая синхронизация при загрузке
-            if (githubConfig && githubConfig.autoSync) {
-                loadFromGitHub().then(() => {
-                    showToast('Данные успешно синхронизированы с GitHub', 'success');
-                }).catch(error => {
-                    showToast('Ошибка синхронизации с GitHub: ' + error.message, 'danger');
-                });
-            }
         });
+        
+        // Проверка запомненных данных для автоматического входа
+        function checkRememberedLogin() {
+            const remembered = JSON.parse(localStorage.getItem(REMEMBER_ME_KEY));
+            if (remembered && remembered.username && remembered.password) {
+                document.getElementById('username').value = remembered.username;
+                document.getElementById('password').value = remembered.password;
+                document.getElementById('rememberMe').checked = true;
+                
+                // Автоматический вход
+                setTimeout(() => {
+                    login();
+                }, 500);
+            }
+        }
         
         // Функции работы с уведомлениями
         function showToast(message, type = 'info') {
@@ -624,6 +679,7 @@
                 // Обновляем данные в приложении
                 window.students = content.students || [];
                 window.scores = content.scores || [];
+                window.adminPassword = content.adminPassword || 'admin';
                 
                 saveToLocalStorage();
                 
@@ -671,6 +727,7 @@
                 const content = {
                     students: window.students,
                     scores: window.scores,
+                    adminPassword: window.adminPassword || 'admin',
                     lastUpdated: new Date().toISOString()
                 };
                 
@@ -715,7 +772,8 @@
         function saveToLocalStorage() {
             const data = {
                 students: window.students || [],
-                scores: window.scores || []
+                scores: window.scores || [],
+                adminPassword: window.adminPassword || 'admin'
             };
             localStorage.setItem(APP_KEY, JSON.stringify(data));
         }
@@ -723,11 +781,13 @@
         function loadFromLocalStorage() {
             const data = JSON.parse(localStorage.getItem(APP_KEY)) || {
                 students: [],
-                scores: []
+                scores: [],
+                adminPassword: 'admin'
             };
             
             window.students = data.students;
             window.scores = data.scores;
+            window.adminPassword = data.adminPassword;
         }
         
         // Функции навигации
@@ -736,6 +796,7 @@
             document.getElementById('teacherView').classList.add('hidden');
             document.getElementById('studentView').classList.add('hidden');
             document.getElementById('githubConfigView').classList.add('hidden');
+            document.getElementById('adminSettingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.add('hidden');
             document.getElementById('logoutLink').style.display = 'none';
             currentUser = null;
@@ -746,6 +807,7 @@
             document.getElementById('teacherView').classList.remove('hidden');
             document.getElementById('studentView').classList.add('hidden');
             document.getElementById('githubConfigView').classList.add('hidden');
+            document.getElementById('adminSettingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
             document.getElementById('logoutLink').style.display = 'block';
             loadTeacherData();
@@ -756,6 +818,7 @@
             document.getElementById('teacherView').classList.add('hidden');
             document.getElementById('studentView').classList.remove('hidden');
             document.getElementById('githubConfigView').classList.add('hidden');
+            document.getElementById('adminSettingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
             document.getElementById('logoutLink').style.display = 'block';
             loadStudentData();
@@ -766,6 +829,17 @@
             document.getElementById('teacherView').classList.add('hidden');
             document.getElementById('studentView').classList.add('hidden');
             document.getElementById('githubConfigView').classList.remove('hidden');
+            document.getElementById('adminSettingsView').classList.add('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('logoutLink').style.display = 'block';
+        }
+        
+        function showAdminSettingsView() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('teacherView').classList.add('hidden');
+            document.getElementById('studentView').classList.add('hidden');
+            document.getElementById('githubConfigView').classList.add('hidden');
+            document.getElementById('adminSettingsView').classList.remove('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
             document.getElementById('logoutLink').style.display = 'block';
         }
@@ -777,10 +851,17 @@
                 showStudentView();
             } else if (viewName === 'githubConfigView') {
                 showGithubConfigView();
+            } else if (viewName === 'adminSettingsView') {
+                showAdminSettingsView();
             }
         }
         
         function logout() {
+            // Очищаем запомненные данные, если пользователь выходит
+            if (!document.getElementById('rememberMe').checked) {
+                localStorage.removeItem(REMEMBER_ME_KEY);
+            }
+            
             currentUser = null;
             showLoginView();
         }
@@ -789,22 +870,83 @@
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
             
             if (!username || !password) {
                 showToast('Заполните все поля', 'warning');
                 return;
             }
             
-            // Простая проверка (в реальном приложении нужно использовать хеширование)
+            // Сохраняем данные для входа, если отмечено "Запомнить меня"
+            if (rememberMe) {
+                localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
+                    username: username,
+                    password: password
+                }));
+            } else {
+                localStorage.removeItem(REMEMBER_ME_KEY);
+            }
+            
+            // Проверяем вход администратора
+            if (username === 'admin') {
+                if (password === (window.adminPassword || 'admin')) {
+                    currentUser = { name: 'Администратор', isAdmin: true };
+                    showTeacherView();
+                    showToast('Вход выполнен как администратор', 'success');
+                } else {
+                    showToast('Неверный пароль администратора', 'danger');
+                }
+                return;
+            }
+            
+            // Проверяем вход ученика
             const student = window.students.find(s => 
                 s.username === username && s.password === password);
             
             if (student) {
                 currentUser = student;
                 showStudentView();
+                showToast('Вход выполнен как ученик: ' + student.name, 'success');
             } else {
                 showToast('Неверный логин или пароль', 'danger');
             }
+        }
+        
+        // Смена пароля администратора
+        function changeAdminPassword() {
+            const currentPassword = document.getElementById('currentAdminPassword').value;
+            const newPassword = document.getElementById('newAdminPassword').value;
+            const confirmPassword = document.getElementById('confirmAdminPassword').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('Заполните все поля', 'warning');
+                return;
+            }
+            
+            if (currentPassword !== (window.adminPassword || 'admin')) {
+                showToast('Текущий пароль неверен', 'danger');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('Новые пароли не совпадают', 'danger');
+                return;
+            }
+            
+            window.adminPassword = newPassword;
+            saveToLocalStorage();
+            
+            // Автоматическое сохранение в GitHub
+            if (githubConfig && githubConfig.autoSync) {
+                saveToGitHub();
+            }
+            
+            // Очищаем поля
+            document.getElementById('currentAdminPassword').value = '';
+            document.getElementById('newAdminPassword').value = '';
+            document.getElementById('confirmAdminPassword').value = '';
+            
+            showToast('Пароль администратора успешно изменен', 'success');
         }
         
         // Функции преподавателя
@@ -1126,6 +1268,8 @@
                 { id: 11, studentId: 3, period: "сентябрь-октябрь 2025", category: "Эмоциональный интеллект", points: 85 },
                 { id: 12, studentId: 3, period: "сентябрь-октябрь 2025", category: "Командная работа", points: 90 }
             ];
+            
+            window.adminPassword = 'admin';
             
             saveToLocalStorage();
         }
