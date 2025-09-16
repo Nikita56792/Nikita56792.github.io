@@ -1,5 +1,5 @@
 // Конфигурация
-const API_URL = 'https://script.google.com/u/0/home/projects/18F8jIWk6rkw1IQDLrVTAkoWXxBKEewExKQsxghxJOoTk4d2K1UNjQyVM/edit';
+const API_URL = 'https://script.google.com/u/0/home/projects/18F8jIWk6rkw1IQDLrVTAkoWXxBKEewExKQsxghxJOoTk4d2K1UNjQyVM';
 
 // Глобальные переменные
 let currentUser = null;
