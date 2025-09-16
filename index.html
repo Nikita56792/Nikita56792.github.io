@@ -6,192 +6,759 @@
     <title>Система отслеживания метакомпетенций</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .navbar-brand { font-weight: bold; }
-        .card { margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .chart-container { position: relative; height: 300px; }
-        .login-form { max-width: 400px; margin: 100px auto; }
-        .hidden { display: none; }
+        :root {
+            --primary: #4e73df;
+            --secondary: #858796;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.65rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: #f8f9fc;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.35rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5fc8;
+            border-color: #3a5fc8;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .student-card {
+            transition: all 0.2s;
+        }
+        
+        .student-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--primary) 10%, #224abe 100%);
+            color: white;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 1rem;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: white;
+        }
+        
+        .sidebar .nav-link.active {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .content-wrapper {
+            width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+            .container-fluid {
+                display: flex;
+            }
+            
+            .sidebar {
+                width: 250px;
+            }
+            
+            .content-wrapper {
+                width: calc(100% - 250px);
+            }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="#">Метакомпетенции</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="#" id="teacherLink"><i class="fas fa-chalkboard-teacher"></i> Преподаватель</a>
-                <a class="nav-link" href="#" id="studentLink"><i class="fas fa-user-graduate"></i> Ученик</a>
-                <a class="nav-link" href="#" id="logoutLink" style="display: none;"><i class="fas fa-sign-out-alt"></i> Выйти</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- Форма входа -->
-        <div id="loginPage">
-            <div class="card login-form">
-                <div class="card-body">
-                    <h3 class="card-title text-center">Вход в систему</h3>
-                    <div class="mb-3">
-                        <label class="form-label">Логин</label>
-                        <input type="text" class="form-control" id="username">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Пароль</label>
-                        <input type="password" class="form-control" id="password">
-                    </div>
-                    <button class="btn btn-primary w-100" onclick="login()">Войти</button>
-                    <div class="text-center mt-3">
-                        <a href="#" onclick="showTeacherView()">Вход для преподавателя</a>
-                    </div>
-                </div>
+    <!-- Главный контейнер -->
+    <div class="container-fluid p-0">
+        <!-- Боковая панель -->
+        <div class="sidebar hidden" id="sidebar">
+            <div class="p-4">
+                <h4 class="text-center mb-4">Метакомпетенции</h4>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-view="teacherView">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Преподаватель
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-view="studentView">
+                            <i class="fas fa-user-graduate me-2"></i>Ученик
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#" id="logoutLink">
+                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
 
-        <!-- Интерфейс преподавателя -->
-        <div id="teacherView" class="hidden">
-            <h2 class="mb-4">Панель преподавателя</h2>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Добавить ученика</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <input type="text" class="form-control" id="newStudentName" placeholder="ФИО ученика">
-                            </div>
-                            <div class="mb-3">
-                                <input type="text" class="form-control" id="newStudentGroup" placeholder="Группа">
-                            </div>
-                            <button class="btn btn-success" onclick="addStudent()">Добавить</button>
-                        </div>
-                    </div>
+        <!-- Основной контент -->
+        <div class="content-wrapper">
+            <!-- Навбар -->
+            <nav class="navbar navbar-expand navbar-light bg-white mb-4 shadow">
+                <div class="container-fluid">
+                    <button class="btn btn-link d-md-none" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="h3 mb-0 text-gray-800">Система отслеживания метакомпетенций</h1>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Добавить баллы</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <select class="form-select" id="scoreStudent"></select>
-                            </div>
-                            <div class="mb-3">
-                                <select class="form-select" id="scorePeriod">
-                                    <option value="сентябрь-октябрь 2025">сентябрь-октябрь 2025</option>
-                                    <option value="ноябрь-декабрь 2025">ноябрь-декабрь 2025</option>
-                                    <option value="январь-февраль 2026">январь-февраль 2026</option>
-                                    <option value="март-май 2026">март-май 2026</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <select class="form-select" id="scoreCategory">
-                                    <option value="Критическое мышление">Критическое мышление</option>
-                                    <option value="Эмоциональный интеллект">Эмоциональный интеллект</option>
-                                    <option value="Командная работа">Командная работа</option>
-                                    <option value="Креативность">Креативность</option>
-                                    <option value="Цифровая грамотность">Цифровая грамотность</option>
-                                    <option value="Проектное мышление">Проектное мышление</option>
-                                    <option value="Рефлексия">Рефлексия</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <input type="number" class="form-control" id="scorePoints" placeholder="Баллы">
-                            </div>
-                            <button class="btn btn-success" onclick="addScore()">Добавить баллы</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5>Список учеников</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>ФИО</th>
-                                <th>Группа</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsList"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5>Статистика группы</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="groupChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </nav>
 
-        <!-- Интерфейс ученика -->
-        <div id="studentView" class="hidden">
-            <h2 class="mb-4">Мои метакомпетенции</h2>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Мой прогресс</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="progressChart"></canvas>
+            <!-- Контент -->
+            <div class="container-fluid">
+                <!-- Страница входа -->
+                <div id="loginPage">
+                    <div class="login-container">
+                        <div class="card login-card shadow">
+                            <div class="card-body p-5">
+                                <h3 class="card-title text-center mb-4">Вход в систему</h3>
+                                <div class="mb-3">
+                                    <label class="form-label">Логин</label>
+                                    <input type="text" class="form-control" id="username">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Пароль</label>
+                                    <input type="password" class="form-control" id="password">
+                                </div>
+                                <button class="btn btn-primary w-100 mb-3" onclick="login()">Войти</button>
+                                <div class="text-center">
+                                    <a href="#" onclick="showTeacherView()">Вход для преподавателя</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5>Мои баллы по категориям</h5>
+
+                <!-- Интерфейс преподавателя -->
+                <div id="teacherView" class="hidden">
+                    <div class="row">
+                        <div class="col-xl-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Добавить ученика</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control" id="newStudentName" placeholder="ФИО ученика">
+                                    </div>
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control" id="newStudentGroup" placeholder="Группа">
+                                    </div>
+                                    <button class="btn btn-success" onclick="addStudent()">Добавить</button>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Добавить баллы</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <select class="form-select" id="scoreStudent"></select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <select class="form-select" id="scorePeriod">
+                                            <option value="сентябрь-октябрь 2025">сентябрь-октябрь 2025</option>
+                                            <option value="ноябрь-декабрь 2025">ноябрь-декабрь 2025</option>
+                                            <option value="январь-февраль 2026">январь-февраль 2026</option>
+                                            <option value="март-май 2026">март-май 2026</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <select class="form-select" id="scoreCategory">
+                                            <option value="Критическое мышление">Критическое мышление</option>
+                                            <option value="Эмоциональный интеллект">Эмоциональный интеллект</option>
+                                            <option value="Командная работа">Командная работа</option>
+                                            <option value="Креативность">Креативность</option>
+                                            <option value="Цифровая грамотность">Цифровая грамотность</option>
+                                            <option value="Проектное мышление">Проектное мышление</option>
+                                            <option value="Рефлексия">Рефлексия</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <input type="number" class="form-control" id="scorePoints" placeholder="Баллы">
+                                    </div>
+                                    <button class="btn btn-success" onclick="addScore()">Добавить баллы</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="radarChart"></canvas>
+
+                        <div class="col-xl-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Список учеников</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>ФИО</th>
+                                                    <th>Группа</th>
+                                                    <th>Действия</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="studentsList"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Статистика группы</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="groupChart"></canvas>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5>Детализация баллов</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Период</th>
-                                <th>Категория</th>
-                                <th>Баллы</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scoresTable"></tbody>
-                    </table>
+
+                <!-- Интерфейс ученика -->
+                <div id="studentView" class="hidden">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Мой прогресс</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="progressChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Мои баллы по категориям</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="radarChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Детализация баллов</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Период</th>
+                                            <th>Категория</th>
+                                            <th>Баллы</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scoresTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // Конфигурация приложения
+        const APP_KEY = 'metacompetencies_tracker';
+        
+        // Глобальные переменные
+        let currentUser = null;
+        let groupChart = null;
+        let progressChart = null;
+        let radarChart = null;
+        
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загрузка данных из локального хранилища
+            loadFromLocalStorage();
+            
+            // Настройка навигации
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const view = this.getAttribute('data-view');
+                    showView(view);
+                });
+            });
+            
+            document.getElementById('logoutLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
+            
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('hidden');
+            });
+            
+            // Показать страницу входа по умолчанию
+            showLoginView();
+        });
+        
+        // Функции работы с локальным хранилищем
+        function saveToLocalStorage() {
+            const data = {
+                students: window.students || [],
+                scores: window.scores || []
+            };
+            localStorage.setItem(APP_KEY, JSON.stringify(data));
+        }
+        
+        function loadFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem(APP_KEY)) || {
+                students: [],
+                scores: []
+            };
+            
+            window.students = data.students;
+            window.scores = data.scores;
+        }
+        
+        // Функции навигации
+        function showLoginView() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('teacherView').classList.add('hidden');
+            document.getElementById('studentView').classList.add('hidden');
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('logoutLink').style.display = 'none';
+            currentUser = null;
+        }
+        
+        function showTeacherView() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('teacherView').classList.remove('hidden');
+            document.getElementById('studentView').classList.add('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('logoutLink').style.display = 'block';
+            loadTeacherData();
+        }
+        
+        function showStudentView() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('teacherView').classList.add('hidden');
+            document.getElementById('studentView').classList.remove('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('logoutLink').style.display = 'block';
+            loadStudentData();
+        }
+        
+        function showView(viewName) {
+            if (viewName === 'teacherView') {
+                showTeacherView();
+            } else if (viewName === 'studentView') {
+                showStudentView();
+            }
+        }
+        
+        function logout() {
+            currentUser = null;
+            showLoginView();
+        }
+        
+        // Функции аутентификации
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                alert('Заполните все поля');
+                return;
+            }
+            
+            // Простая проверка (в реальном приложении нужно использовать хеширование)
+            const student = window.students.find(s => 
+                s.username === username && s.password === password);
+            
+            if (student) {
+                currentUser = student;
+                showStudentView();
+            } else {
+                alert('Неверный логин или пароль');
+            }
+        }
+        
+        // Функции преподавателя
+        function loadTeacherData() {
+            renderStudentsList();
+            populateStudentDropdown();
+            renderGroupChart();
+        }
+        
+        function renderStudentsList() {
+            const tbody = document.getElementById('studentsList');
+            tbody.innerHTML = '';
+            
+            window.students.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.id}</td>
+                    <td>${student.name}</td>
+                    <td>${student.group}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function populateStudentDropdown() {
+            const select = document.getElementById('scoreStudent');
+            select.innerHTML = '';
+            
+            window.students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.name} (${student.group})`;
+                select.appendChild(option);
+            });
+        }
+        
+        function addStudent() {
+            const name = document.getElementById('newStudentName').value;
+            const group = document.getElementById('newStudentGroup').value;
+            
+            if (!name || !group) {
+                alert('Заполните все поля');
+                return;
+            }
+            
+            // Генерируем логин и пароль
+            const username = name.toLowerCase().replace(/\s+/g, '');
+            const password = 'password'; // Простой пароль по умолчанию
+            
+            const newStudent = {
+                id: window.students.length > 0 ? Math.max(...window.students.map(s => s.id)) + 1 : 1,
+                name: name,
+                group: group,
+                username: username,
+                password: password
+            };
+            
+            window.students.push(newStudent);
+            saveToLocalStorage();
+            
+            // Очищаем поля и обновляем список
+            document.getElementById('newStudentName').value = '';
+            document.getElementById('newStudentGroup').value = '';
+            loadTeacherData();
+            
+            alert('Ученик добавлен. Логин: ' + username + ', Пароль: password');
+        }
+        
+        function deleteStudent(id) {
+            if (!confirm('Вы уверены, что хотите удалить этого ученика?')) {
+                return;
+            }
+            
+            // Удаляем ученика
+            window.students = window.students.filter(student => student.id !== id);
+            
+            // Удаляем все баллы ученика
+            window.scores = window.scores.filter(score => score.studentId !== id);
+            
+            saveToLocalStorage();
+            loadTeacherData();
+            
+            alert('Ученик удален');
+        }
+        
+        function addScore() {
+            const studentId = parseInt(document.getElementById('scoreStudent').value);
+            const period = document.getElementById('scorePeriod').value;
+            const category = document.getElementById('scoreCategory').value;
+            const points = parseInt(document.getElementById('scorePoints').value);
+            
+            if (!studentId || isNaN(points)) {
+                alert('Заполните все поля');
+                return;
+            }
+            
+            const newScore = {
+                id: window.scores.length > 0 ? Math.max(...window.scores.map(s => s.id)) + 1 : 1,
+                studentId: studentId,
+                period: period,
+                category: category,
+                points: points
+            };
+            
+            window.scores.push(newScore);
+            saveToLocalStorage();
+            
+            // Очищаем поле баллов
+            document.getElementById('scorePoints').value = '';
+            
+            alert('Баллы добавлены');
+        }
+        
+        function renderGroupChart() {
+            const ctx = document.getElementById('groupChart').getContext('2d');
+            
+            if (groupChart) {
+                groupChart.destroy();
+            }
+            
+            // Подготовка данных для графика
+            const studentScores = {};
+            
+            window.students.forEach(student => {
+                studentScores[student.id] = {
+                    student: student,
+                    total: 0
+                };
+            });
+            
+            window.scores.forEach(score => {
+                if (studentScores[score.studentId]) {
+                    studentScores[score.studentId].total += score.points;
+                }
+            });
+            
+            const students = Object.values(studentScores).map(s => s.student.name);
+            const totals = Object.values(studentScores).map(s => s.total);
+            
+            groupChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: students,
+                    datasets: [{
+                        label: 'Общее количество баллов',
+                        data: totals,
+                        backgroundColor: 'rgba(78, 115, 223, 0.5)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Функции ученика
+        function loadStudentData() {
+            if (!currentUser) return;
+            
+            renderScoresTable();
+            renderProgressChart();
+            renderRadarChart();
+        }
+        
+        function renderScoresTable() {
+            const tbody = document.getElementById('scoresTable');
+            tbody.innerHTML = '';
+            
+            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            
+            studentScores.forEach(score => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${score.period}</td>
+                    <td>${score.category}</td>
+                    <td>${score.points}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function renderProgressChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            
+            if (progressChart) {
+                progressChart.destroy();
+            }
+            
+            // Группируем баллы по периодам
+            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            const periods = [...new Set(studentScores.map(s => s.period))];
+            
+            const periodTotals = periods.map(period => {
+                return studentScores.filter(s => s.period === period)
+                                 .reduce((sum, s) => sum + s.points, 0);
+            });
+            
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: periods,
+                    datasets: [{
+                        label: 'Баллы по периодам',
+                        data: periodTotals,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            // Группируем баллы по категориям
+            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            const categories = [
+                'Критическое мышление',
+                'Эмоциональный интеллект',
+                'Командная работа',
+                'Креативность',
+                'Цифровая грамотность',
+                'Проектное мышление',
+                'Рефлексия'
+            ];
+            
+            const categoryTotals = categories.map(category => {
+                return studentScores.filter(s => s.category === category)
+                                 .reduce((sum, s) => sum + s.points, 0);
+            });
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Баллы по категориям',
+                        data: categoryTotals,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Инициализация демо-данных при первом запуске
+        if (!localStorage.getItem(APP_KEY)) {
+            window.students = [
+                { id: 1, name: "Маша Петрова", group: "7А", username: "маша", password: "password" },
+                { id: 2, name: "Саша Иванов", group: "7А", username: "саша", password: "password" },
+                { id: 3, name: "Коля Сидоров", group: "7Б", username: "коля", password: "password" }
+            ];
+            
+            window.scores = [
+                { id: 1, studentId: 1, period: "сентябрь-октябрь 2025", category: "Критическое мышление", points: 75 },
+                { id: 2, studentId: 1, period: "сентябрь-октябрь 2025", category: "Эмоциональный интеллект", points: 80 },
+                { id: 3, studentId: 1, period: "сентябрь-октябрь 2025", category: "Командная работа", points: 85 },
+                { id: 4, studentId: 1, period: "ноябрь-декабрь 2025", category: "Критическое мышление", points: 85 },
+                { id: 5, studentId: 1, period: "ноябрь-декабрь 2025", category: "Эмоциональный интеллект", points: 75 },
+                { id: 6, studentId: 1, period: "ноябрь-декабрь 2025", category: "Командная работа", points: 90 },
+                { id: 7, studentId: 2, period: "сентябрь-октябрь 2025", category: "Критическое мышление", points: 65 },
+                { id: 8, studentId: 2, period: "сентябрь-октябрь 2025", category: "Эмоциональный интеллект", points: 70 },
+                { id: 9, studentId: 2, period: "сентябрь-октябрь 2025", category: "Командная работа", points: 75 },
+                { id: 10, studentId: 3, period: "сентябрь-октябрь 2025", category: "Критическое мышление", points: 80 },
+                { id: 11, studentId: 3, period: "сентябрь-октябрь 2025", category: "Эмоциональный интеллект", points: 85 },
+                { id: 12, studentId: 3, period: "сентябрь-октябрь 2025", category: "Командная работа", points: 90 }
+            ];
+            
+            saveToLocalStorage();
+        }
+    </script>
 </body>
 </html>
