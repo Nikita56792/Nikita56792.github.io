@@ -142,6 +142,10 @@
             border-radius: 8px;
             margin-top: 20px;
         }
+        
+        .student-selector {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -154,32 +158,8 @@
         <div class="sidebar hidden" id="sidebar">
             <div class="p-4">
                 <h4 class="text-center mb-4">Метакомпетенции</h4>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#" data-view="teacherView">
-                            <i class="fas fa-chalkboard-teacher me-2"></i>Преподаватель
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-view="studentView">
-                            <i class="fas fa-user-graduate me-2"></i>Ученик
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-view="githubConfigView">
-                            <i class="fab fa-github me-2"></i>Настройки GitHub
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-view="adminSettingsView">
-                            <i class="fas fa-cog me-2"></i>Настройки администратора
-                        </a>
-                    </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link" href="#" id="logoutLink">
-                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
-                        </a>
-                    </li>
+                <ul class="nav flex-column" id="sidebarMenu">
+                    <!-- Меню будет заполняться динамически в зависимости от роли пользователя -->
                 </ul>
             </div>
         </div>
@@ -218,18 +198,16 @@
                                     <label class="form-check-label" for="rememberMe">Запомнить меня</label>
                                 </div>
                                 <button class="btn btn-primary w-100 mb-3" onclick="login()">Войти</button>
-                                <div class="text-center text-muted">
-                                    <small>Для входа преподавателя используйте логин "admin" и пароль "admin"</small>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Настройки GitHub -->
-                <div id="githubConfigView" class="hidden">
+                <!-- Настройки -->
+                <div id="settingsView" class="hidden">
                     <div class="row justify-content-center">
                         <div class="col-lg-8">
+                            <!-- Настройки GitHub -->
                             <div class="card mb-4">
                                 <div class="card-header py-3">
                                     <h6 class="m-0 font-weight-bold text-primary">
@@ -271,14 +249,8 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Настройки администратора -->
-                <div id="adminSettingsView" class="hidden">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-6">
+                            <!-- Настройки администратора -->
                             <div class="card mb-4">
                                 <div class="card-header py-3">
                                     <h6 class="m-0 font-weight-bold text-primary">
@@ -287,7 +259,16 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="admin-settings">
-                                        <h5>Смена пароля администратора</h5>
+                                        <h5>Смена учетных данных администратора</h5>
+                                        <div class="mb-3">
+                                            <label class="form-label">Текущий логин</label>
+                                            <input type="text" class="form-control" id="currentAdminLogin" value="admin" disabled>
+                                            <small class="form-text text-muted">Текущий логин нельзя изменить</small>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Новый логин</label>
+                                            <input type="text" class="form-control" id="newAdminLogin" placeholder="Введите новый логин">
+                                        </div>
                                         <div class="mb-3">
                                             <label class="form-label">Текущий пароль</label>
                                             <input type="password" class="form-control" id="currentAdminPassword" placeholder="Введите текущий пароль">
@@ -300,7 +281,7 @@
                                             <label class="form-label">Повторите новый пароль</label>
                                             <input type="password" class="form-control" id="confirmAdminPassword" placeholder="Повторите новый пароль">
                                         </div>
-                                        <button class="btn btn-primary" onclick="changeAdminPassword()">Сменить пароль</button>
+                                        <button class="btn btn-primary" onclick="changeAdminCredentials()">Сохранить изменения</button>
                                     </div>
                                 </div>
                             </div>
@@ -404,11 +385,25 @@
 
                 <!-- Интерфейс ученика -->
                 <div id="studentView" class="hidden">
+                    <!-- Выбор ученика (виден только преподавателям) -->
+                    <div class="student-selector hidden" id="studentSelector">
+                        <div class="card mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Выберите ученика для просмотра</h6>
+                            </div>
+                            <div class="card-body">
+                                <select class="form-select" id="viewStudentSelect" onchange="loadSelectedStudentData()">
+                                    <option value="">-- Выберите ученика --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="card mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Мой прогресс</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">Прогресс</h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="chart-container">
@@ -421,7 +416,7 @@
                         <div class="col-md-6">
                             <div class="card mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Мои баллы по категориям</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">Баллы по категориям</h6>
                                 </div>
                                 <div class="card-body">
                                     <div class="chart-container">
@@ -468,6 +463,7 @@
         let progressChart = null;
         let radarChart = null;
         let githubConfig = null;
+        let selectedStudentId = null;
         
         // Функции для работы с UTF-8 и Base64
         function utf8ToBase64(str) {
@@ -511,19 +507,6 @@
             checkRememberedLogin();
             
             // Настройка навигации
-            document.querySelectorAll('[data-view]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const view = this.getAttribute('data-view');
-                    showView(view);
-                });
-            });
-            
-            document.getElementById('logoutLink').addEventListener('click', function(e) {
-                e.preventDefault();
-                logout();
-            });
-            
             document.getElementById('sidebarToggle').addEventListener('click', function() {
                 document.getElementById('sidebar').classList.toggle('hidden');
             });
@@ -679,7 +662,7 @@
                 // Обновляем данные в приложении
                 window.students = content.students || [];
                 window.scores = content.scores || [];
-                window.adminPassword = content.adminPassword || 'admin';
+                window.adminCredentials = content.adminCredentials || { login: 'admin', password: 'admin' };
                 
                 saveToLocalStorage();
                 
@@ -727,7 +710,7 @@
                 const content = {
                     students: window.students,
                     scores: window.scores,
-                    adminPassword: window.adminPassword || 'admin',
+                    adminCredentials: window.adminCredentials || { login: 'admin', password: 'admin' },
                     lastUpdated: new Date().toISOString()
                 };
                 
@@ -773,7 +756,7 @@
             const data = {
                 students: window.students || [],
                 scores: window.scores || [],
-                adminPassword: window.adminPassword || 'admin'
+                adminCredentials: window.adminCredentials || { login: 'admin', password: 'admin' }
             };
             localStorage.setItem(APP_KEY, JSON.stringify(data));
         }
@@ -782,12 +765,12 @@
             const data = JSON.parse(localStorage.getItem(APP_KEY)) || {
                 students: [],
                 scores: [],
-                adminPassword: 'admin'
+                adminCredentials: { login: 'admin', password: 'admin' }
             };
             
             window.students = data.students;
             window.scores = data.scores;
-            window.adminPassword = data.adminPassword;
+            window.adminCredentials = data.adminCredentials;
         }
         
         // Функции навигации
@@ -795,10 +778,8 @@
             document.getElementById('loginPage').classList.remove('hidden');
             document.getElementById('teacherView').classList.add('hidden');
             document.getElementById('studentView').classList.add('hidden');
-            document.getElementById('githubConfigView').classList.add('hidden');
-            document.getElementById('adminSettingsView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.add('hidden');
-            document.getElementById('logoutLink').style.display = 'none';
             currentUser = null;
         }
         
@@ -806,10 +787,8 @@
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('teacherView').classList.remove('hidden');
             document.getElementById('studentView').classList.add('hidden');
-            document.getElementById('githubConfigView').classList.add('hidden');
-            document.getElementById('adminSettingsView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('logoutLink').style.display = 'block';
             loadTeacherData();
         }
         
@@ -817,43 +796,89 @@
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('teacherView').classList.add('hidden');
             document.getElementById('studentView').classList.remove('hidden');
-            document.getElementById('githubConfigView').classList.add('hidden');
-            document.getElementById('adminSettingsView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
             document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('logoutLink').style.display = 'block';
-            loadStudentData();
-        }
-        
-        function showGithubConfigView() {
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('teacherView').classList.add('hidden');
-            document.getElementById('studentView').classList.add('hidden');
-            document.getElementById('githubConfigView').classList.remove('hidden');
-            document.getElementById('adminSettingsView').classList.add('hidden');
-            document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('logoutLink').style.display = 'block';
-        }
-        
-        function showAdminSettingsView() {
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('teacherView').classList.add('hidden');
-            document.getElementById('studentView').classList.add('hidden');
-            document.getElementById('githubConfigView').classList.add('hidden');
-            document.getElementById('adminSettingsView').classList.remove('hidden');
-            document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('logoutLink').style.display = 'block';
-        }
-        
-        function showView(viewName) {
-            if (viewName === 'teacherView') {
-                showTeacherView();
-            } else if (viewName === 'studentView') {
-                showStudentView();
-            } else if (viewName === 'githubConfigView') {
-                showGithubConfigView();
-            } else if (viewName === 'adminSettingsView') {
-                showAdminSettingsView();
+            
+            // Скрываем выбор ученика для обычных учеников
+            if (currentUser && !currentUser.isAdmin) {
+                document.getElementById('studentSelector').classList.add('hidden');
+                loadStudentData(currentUser.id);
+            } else {
+                document.getElementById('studentSelector').classList.remove('hidden');
+                populateStudentSelector();
             }
+        }
+        
+        function showSettingsView() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('teacherView').classList.add('hidden');
+            document.getElementById('studentView').classList.add('hidden');
+            document.getElementById('settingsView').classList.remove('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            
+            // Заполняем текущие значения
+            document.getElementById('currentAdminLogin').value = window.adminCredentials.login;
+        }
+        
+        function updateSidebarMenu() {
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            sidebarMenu.innerHTML = '';
+            
+            if (currentUser && currentUser.isAdmin) {
+                // Меню для администратора
+                sidebarMenu.innerHTML = `
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-view="teacherView">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Преподаватель
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-view="studentView">
+                            <i class="fas fa-user-graduate me-2"></i>Ученик
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-view="settingsView">
+                            <i class="fas fa-cog me-2"></i>Настройки
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#" id="logoutLink">
+                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                        </a>
+                    </li>
+                `;
+            } else {
+                // Меню для ученика
+                sidebarMenu.innerHTML = `
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-view="studentView">
+                            <i class="fas fa-user-graduate me-2"></i>Мои результаты
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#" id="logoutLink">
+                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                        </a>
+                    </li>
+                `;
+            }
+            
+            // Добавляем обработчики событий
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const view = this.getAttribute('data-view');
+                    if (view === 'teacherView') showTeacherView();
+                    else if (view === 'studentView') showStudentView();
+                    else if (view === 'settingsView') showSettingsView();
+                });
+            });
+            
+            document.getElementById('logoutLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
         }
         
         function logout() {
@@ -888,9 +913,10 @@
             }
             
             // Проверяем вход администратора
-            if (username === 'admin') {
-                if (password === (window.adminPassword || 'admin')) {
+            if (username === (window.adminCredentials?.login || 'admin')) {
+                if (password === (window.adminCredentials?.password || 'admin')) {
                     currentUser = { name: 'Администратор', isAdmin: true };
+                    updateSidebarMenu();
                     showTeacherView();
                     showToast('Вход выполнен как администратор', 'success');
                 } else {
@@ -904,7 +930,8 @@
                 s.username === username && s.password === password);
             
             if (student) {
-                currentUser = student;
+                currentUser = { ...student, isAdmin: false };
+                updateSidebarMenu();
                 showStudentView();
                 showToast('Вход выполнен как ученик: ' + student.name, 'success');
             } else {
@@ -912,28 +939,42 @@
             }
         }
         
-        // Смена пароля администратора
-        function changeAdminPassword() {
+        // Смена учетных данных администратора
+        function changeAdminCredentials() {
             const currentPassword = document.getElementById('currentAdminPassword').value;
+            const newLogin = document.getElementById('newAdminLogin').value;
             const newPassword = document.getElementById('newAdminPassword').value;
             const confirmPassword = document.getElementById('confirmAdminPassword').value;
             
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                showToast('Заполните все поля', 'warning');
+            if (!currentPassword) {
+                showToast('Введите текущий пароль', 'warning');
                 return;
             }
             
-            if (currentPassword !== (window.adminPassword || 'admin')) {
+            if (currentPassword !== (window.adminCredentials?.password || 'admin')) {
                 showToast('Текущий пароль неверен', 'danger');
                 return;
             }
             
-            if (newPassword !== confirmPassword) {
+            if (newLogin && newLogin.length < 3) {
+                showToast('Логин должен содержать не менее 3 символов', 'warning');
+                return;
+            }
+            
+            if (newPassword && newPassword.length < 4) {
+                showToast('Пароль должен содержать не менее 4 символов', 'warning');
+                return;
+            }
+            
+            if (newPassword && newPassword !== confirmPassword) {
                 showToast('Новые пароли не совпадают', 'danger');
                 return;
             }
             
-            window.adminPassword = newPassword;
+            // Обновляем учетные данные
+            if (newLogin) window.adminCredentials.login = newLogin;
+            if (newPassword) window.adminCredentials.password = newPassword;
+            
             saveToLocalStorage();
             
             // Автоматическое сохранение в GitHub
@@ -943,10 +984,11 @@
             
             // Очищаем поля
             document.getElementById('currentAdminPassword').value = '';
+            document.getElementById('newAdminLogin').value = '';
             document.getElementById('newAdminPassword').value = '';
             document.getElementById('confirmAdminPassword').value = '';
             
-            showToast('Пароль администратора успешно изменен', 'success');
+            showToast('Учетные данные администратора успешно изменены', 'success');
         }
         
         // Функции преподавателя
@@ -984,6 +1026,25 @@
                 option.textContent = `${student.name} (${student.group})`;
                 select.appendChild(option);
             });
+        }
+        
+        function populateStudentSelector() {
+            const select = document.getElementById('viewStudentSelect');
+            select.innerHTML = '<option value="">-- Выберите ученика --</option>';
+            
+            window.students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.name} (${student.group})`;
+                select.appendChild(option);
+            });
+        }
+        
+        function loadSelectedStudentData() {
+            const studentId = parseInt(document.getElementById('viewStudentSelect').value);
+            if (studentId) {
+                loadStudentData(studentId);
+            }
         }
         
         function addStudent() {
@@ -1130,19 +1191,22 @@
         }
         
         // Функции ученика
-        function loadStudentData() {
-            if (!currentUser) return;
+        function loadStudentData(studentId = null) {
+            const targetStudentId = studentId || (currentUser ? currentUser.id : null);
+            if (!targetStudentId) return;
             
-            renderScoresTable();
-            renderProgressChart();
-            renderRadarChart();
+            selectedStudentId = targetStudentId;
+            
+            renderScoresTable(targetStudentId);
+            renderProgressChart(targetStudentId);
+            renderRadarChart(targetStudentId);
         }
         
-        function renderScoresTable() {
+        function renderScoresTable(studentId) {
             const tbody = document.getElementById('scoresTable');
             tbody.innerHTML = '';
             
-            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            const studentScores = window.scores.filter(score => score.studentId === studentId);
             
             studentScores.forEach(score => {
                 const tr = document.createElement('tr');
@@ -1155,7 +1219,7 @@
             });
         }
         
-        function renderProgressChart() {
+        function renderProgressChart(studentId) {
             const ctx = document.getElementById('progressChart').getContext('2d');
             
             if (progressChart) {
@@ -1163,7 +1227,7 @@
             }
             
             // Группируем баллы по периодам
-            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            const studentScores = window.scores.filter(score => score.studentId === studentId);
             const periods = [...new Set(studentScores.map(s => s.period))];
             
             const periodTotals = periods.map(period => {
@@ -1197,7 +1261,7 @@
             });
         }
         
-        function renderRadarChart() {
+        function renderRadarChart(studentId) {
             const ctx = document.getElementById('radarChart').getContext('2d');
             
             if (radarChart) {
@@ -1205,7 +1269,7 @@
             }
             
             // Группируем баллы по категориям
-            const studentScores = window.scores.filter(score => score.studentId === currentUser.id);
+            const studentScores = window.scores.filter(score => score.studentId === studentId);
             const categories = [
                 'Критическое мышление',
                 'Эмоциональный интеллект',
@@ -1269,7 +1333,7 @@
                 { id: 12, studentId: 3, period: "сентябрь-октябрь 2025", category: "Командная работа", points: 90 }
             ];
             
-            window.adminPassword = 'admin';
+            window.adminCredentials = { login: 'admin', password: 'admin' };
             
             saveToLocalStorage();
         }
