@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ученик - Система отслеживания метакомпетенций</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Контейнер для уведомлений -->
+    <div class="toast-container"></div>
+
+    <!-- Главный контейнер -->
+    <div class="container-fluid p-0">
+        <!-- Боковая панель -->
+        <div class="sidebar" id="sidebar">
+            <div class="p-4">
+                <h4 class="text-center mb-4">Метакомпетенции</h4>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-view="studentView">
+                            <i class="fas fa-user-graduate me-2"></i>Мои результаты
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Основной контент -->
+        <div class="content-wrapper">
+            <!-- Навбар -->
+            <nav class="navbar navbar-expand navbar-light bg-white mb-4 shadow">
+                <div class="container-fluid">
+                    <button class="btn btn-link d-md-none" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="h3 mb-0 text-gray-800">Мои метакомпетенции</h1>
+                    <div id="syncStatus" class="ms-auto"></div>
+                </div>
+            </nav>
+
+            <!-- Контент -->
+            <div class="container-fluid">
+                <!-- Интерфейс ученика -->
+                <div id="studentView">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Мой прогресс</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="progressChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Мои баллы по категориям</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="radarChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Детализация баллов</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Период</th>
+                                            <th>Категория</th>
+                                            <th>Баллы</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scoresTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="auth.js"></script>
+    <script src="data-manager.js"></script>
+    <script>
+        // Инициализация страницы ученика
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем данные приложения
+            loadAppData();
+            
+            // Получаем текущего пользователя
+            const user = loadFromLocalStorage('currentUser');
+            
+            if (user && user.id) {
+                // Загружаем данные ученика
+                loadStudentData(user.id);
+            }
+            
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('hidden');
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
