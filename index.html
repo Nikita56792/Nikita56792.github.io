@@ -201,21 +201,7 @@
     <!-- Контейнер для уведомлений -->
     <div class="toast-container"></div>
 
-    <!-- Модальное окно выхода с несохраненными данными -->
-    <div class="exit-modal hidden" id="exitModal">
-        <div class="card login-card">
-            <div class="card-body">
-                <h5 class="card-title">Несохраненные данные</h5>
-                <p>У вас есть несохраненные изменения. Вы хотите сохранить их перед выходом?</p>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary" onclick="saveBeforeExit()">Сохранить и выйти</button>
-                    <button class="btn btn-warning" onclick="syncNextSession()">Синхронизировать при следующей сессии</button>
-                    <button class="btn btn-danger" onclick="exitWithoutSaving()">Выйти без сохранения</button>
-                    <button class="btn btn-secondary" onclick="cancelExit()">Отмена</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Главный контейнер -->
     <div class="container-fluid p-0">
