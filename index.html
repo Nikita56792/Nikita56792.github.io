@@ -656,56 +656,83 @@
             }
         }
         
-        async function loadFromYandexDisk() {
-            try {
-                setSyncStatus('Синхронизация с Yandex.Disk...', 'info');
-                document.getElementById('loginStatus').textContent = 'Загрузка данных...';
-                
-                // Получаем URL для скачивания
-                const downloadUrlResponse = await requestDownloadUrl(YANDEX_CONFIG.file);
-                
-                // Скачиваем файл
-                const contentStr = await downloadFromHref(downloadUrlResponse.href);
-                const content = JSON.parse(contentStr);
-                
-                // Обновляем данные в приложении
-                window.students = content.students || [];
-                window.scores = content.scores || [];
-                window.adminCredentials = content.adminCredentials || { login: 'admin', password: 'admin' };
-                
-                saveToLocalStorage();
-                
-                showToast('Данные успешно загружены с Yandex.Disk', 'success');
-                setSyncStatus('Данные загружены', 'success');
-                document.getElementById('loginStatus').textContent = '';
-                
-                // Обновляем интерфейс, если мы в режиме преподавателя
-                if (document.getElementById('teacherView').classList.contains('hidden') === false) {
-                    loadTeacherData();
+        try {
+            setSyncStatus('Синхронизация с Yandex Disk...', 'info');
+            document.getElementById('loginStatus').textContent = 'Загрузка данных...';
+
+            // Получаем URL для скачивания
+            const encodedPath = encodeURIComponent(YANDEX_CONFIG.filePath);
+            const response = await fetch(`https://cloud-api.yandex.net/v1/disk/resources/download?path=${encodedPath}`, {
+                headers: {
+                    'Authorization': `OAuth ${yandexToken}`,
+                    'Accept': 'application/json'
                 }
-                
-                // Обновляем интерфейс, если мы в режиме ученика
-                if (document.getElementById('studentView').classList.contains('hidden') === false) {
-                    if (currentUser && !currentUser.isAdmin) {
-                        loadStudentData(currentUser.id);
-                    } else {
-                        populateStudentSelector();
-                    }
-                }
-            } catch (error) {
+            });
+
+            if (!response.ok) {
                 // Если файл не существует, создадим его позже
-                if (error.message.includes('404') || error.message.includes('не найден')) {
+                if (response.status === 404) {
                     showToast('Файл данных не найден, будет создан при сохранении', 'info');
                     setSyncStatus('Готово', 'success');
                     document.getElementById('loginStatus').textContent = '';
                     return;
                 }
-                
-                showToast('Ошибка загрузки данных с Yandex.Disk: ' + error.message, 'danger');
-                setSyncStatus('Ошибка загрузки', 'danger');
-                document.getElementById('loginStatus').textContent = 'Ошибка загрузки данных';
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const data = await response.json();
+            const downloadUrl = data.href;
+
+            // Скачиваем файл
+            const fileResponse = await fetch(downloadUrl, {
+                headers: {
+                    'Authorization': `OAuth ${yandexToken}`
+                }
+            });
+
+            if (!fileResponse.ok) {
+                throw new Error(`Ошибка загрузки файла: ${fileResponse.status}`);
+            }
+
+            // Читаем как текст
+            const fileContent = await fileResponse.text();
+            let content;
+            try {
+                content = JSON.parse(fileContent);
+            } catch (e) {
+                throw new Error('Файл на Yandex Disk не является валидным JSON');
+            }
+
+            // Обновляем данные в приложении
+            window.students = content.students || [];
+            window.scores = content.scores || [];
+            window.adminCredentials = content.adminCredentials || { login: 'admin', password: 'admin' };
+
+            saveToLocalStorage();
+
+            showToast('Данные успешно загружены из Yandex Disk', 'success');
+            setSyncStatus('Данные загружены', 'success');
+            document.getElementById('loginStatus').textContent = '';
+
+            // Обновляем интерфейс, если мы в режиме преподавателя
+            if (document.getElementById('teacherView').classList.contains('hidden') === false) {
+                loadTeacherData();
+            }
+
+            // Обновляем интерфейс, если мы в режиме ученика
+            if (document.getElementById('studentView').classList.contains('hidden') === false) {
+                if (currentUser && !currentUser.isAdmin) {
+                    loadStudentData(currentUser.id);
+                } else {
+                    populateStudentSelector();
+                }
+            }
+        } catch (error) {
+            showToast('Ошибка загрузки данных из Yandex Disk: ' + error.message, 'danger');
+            setSyncStatus('Ошибка загрузки', 'danger');
+            document.getElementById('loginStatus').textContent = 'Ошибка загрузки данных';
         }
+    }
         
         async function saveToYandexDiskWithRetry() {
             if (syncRetryCount >= MAX_RETRY_ATTEMPTS) {
