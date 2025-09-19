@@ -185,14 +185,9 @@
         
         .editable-input {
             width: 100%;
-            border: none;
-            background: transparent;
-            padding: 5px;
-        }
-        
-        .editable-input:focus {
-            outline: 2px solid var(--primary);
-            background-color: #f8f9fc;
+            border: 1px solid #ddd;
+            padding: 4px;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -394,7 +389,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-bordered" id="studentsTable">
+                                        <table class="table table-bordered">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
@@ -404,11 +399,10 @@
                                                     <th>Действия</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="studentsList">
-                                                <!-- Список учеников будет заполнен динамически -->
-                                            </tbody>
+                                            <tbody id="studentsList"></tbody>
                                         </table>
                                     </div>
+                                    <button class="btn btn-primary mt-3" onclick="saveStudentsChanges()">Сохранить изменения</button>
                                 </div>
                             </div>
                         </div>
@@ -533,15 +527,6 @@
         const GITHUB_CONFIG_KEY = 'github_config';
         const REMEMBER_ME_KEY = 'remember_me';
         
-        // Настройки GitHub по умолчанию (хранятся прямо в HTML)
-        const DEFAULT_GITHUB_CONFIG = {
-            username: "your_github_username",
-            token: "your_github_token",
-            repo: "your_repository_name",
-            file: "data.json",
-            autoSync: true
-        };
-        
         // Глобальные переменные
         let currentUser = null;
         let groupChart = null;
@@ -549,9 +534,19 @@
         let radarChart = null;
         let githubConfig = null;
         let selectedStudentId = null;
+        let unsavedChanges = false;
         let syncRetryCount = 0;
         const MAX_RETRY_ATTEMPTS = 5;
         const RETRY_DELAY = 2000; // 2 секунды
+        
+        // Настройки GitHub (хранятся в HTML)
+        const DEFAULT_GITHUB_CONFIG = {
+            username: "your_github_username",
+            token: "your_github_token",
+            repo: "metacompetencies-data",
+            file: "data.json",
+            autoSync: true
+        };
         
         // Функции для работы с UTF-8 и Base64
         function utf8ToBase64(str) {
@@ -664,14 +659,22 @@
         
         // Функции работы с GitHub API
         function loadGithubConfig() {
-            // Загружаем настройки из localStorage или используем значения по умолчанию
-            const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY)) || DEFAULT_GITHUB_CONFIG;
-            githubConfig = config;
-            
-            document.getElementById('githubUsername').value = config.username || '';
-            document.getElementById('githubToken').value = config.token || '';
-            document.getElementById('githubRepo').value = config.repo || '';
-            document.getElementById('githubFile').value = config.file || 'data.json';
+            // Пробуем загрузить из localStorage
+            const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY));
+            if (config) {
+                githubConfig = config;
+                document.getElementById('githubUsername').value = config.username || '';
+                document.getElementById('githubToken').value = config.token || '';
+                document.getElementById('githubRepo').value = config.repo || '';
+                document.getElementById('githubFile').value = config.file || 'data.json';
+            } else {
+                // Используем значения по умолчанию
+                githubConfig = DEFAULT_GITHUB_CONFIG;
+                document.getElementById('githubUsername').value = DEFAULT_GITHUB_CONFIG.username;
+                document.getElementById('githubToken').value = DEFAULT_GITHUB_CONFIG.token;
+                document.getElementById('githubRepo').value = DEFAULT_GITHUB_CONFIG.repo;
+                document.getElementById('githubFile').value = DEFAULT_GITHUB_CONFIG.file;
+            }
         }
         
         function saveGithubConfig() {
@@ -776,12 +779,14 @@
             if (syncRetryCount >= MAX_RETRY_ATTEMPTS) {
                 showToast(`Не удалось сохранить данные после ${MAX_RETRY_ATTEMPTS} попыток`, 'danger');
                 setSyncStatus('Ошибка сохранения', 'danger');
+                unsavedChanges = true;
                 return;
             }
             
             try {
                 await saveToGitHub();
                 syncRetryCount = 0;
+                unsavedChanges = false;
             } catch (error) {
                 syncRetryCount++;
                 showToast(`Ошибка сохранения, повторная попытка ${syncRetryCount}/${MAX_RETRY_ATTEMPTS}...`, 'warning');
@@ -857,7 +862,7 @@
             syncStatus.innerHTML = `<span class="sync-status sync-${type}">${message}</span>`;
         }
         
-        // Функции работы с локальным хранилище
+        // Функции работы с локальным хранилищем
         function saveToLocalStorage() {
             const data = {
                 students: window.students || [],
@@ -1040,14 +1045,15 @@
             }
             
             // Проверяем вход администратора
-            const adminLogin = window.adminCredentials ? window.adminCredentials.login : 'admin';
-            const adminPassword = window.adminCredentials ? window.adminCredentials.password : 'admin';
-            
-            if (username === adminLogin && password === adminPassword) {
-                currentUser = { name: 'Администратор', isAdmin: true };
-                updateSidebarMenu();
-                showTeacherView();
-                showToast('Вход выполнен как администратор', 'success');
+            if (username === (window.adminCredentials?.login || 'admin')) {
+                if (password === (window.adminCredentials?.password || 'admin')) {
+                    currentUser = { name: 'Администратор', isAdmin: true };
+                    updateSidebarMenu();
+                    showTeacherView();
+                    showToast('Вход выполнен как администратор', 'success');
+                } else {
+                    showToast('Неверный пароль администратора', 'danger');
+                }
                 return;
             }
             
@@ -1134,11 +1140,11 @@
                     <td>${student.id}</td>
                     <td>
                         <input type="text" class="editable-input" value="${student.name}" 
-                            data-field="name" data-id="${student.id}" onchange="updateStudentField(${student.id}, 'name', this.value)">
+                               data-field="name" data-id="${student.id}">
                     </td>
                     <td>
                         <input type="text" class="editable-input" value="${student.group}" 
-                            data-field="group" data-id="${student.id}" onchange="updateStudentField(${student.id}, 'group', this.value)">
+                               data-field="group" data-id="${student.id}">
                     </td>
                     <td>${student.username}</td>
                     <td>
@@ -1149,18 +1155,29 @@
             });
         }
         
-        function updateStudentField(studentId, field, value) {
-            const student = window.students.find(s => s.id === studentId);
-            if (student) {
-                student[field] = value;
+        function saveStudentsChanges() {
+            const inputs = document.querySelectorAll('.editable-input');
+            let hasChanges = false;
+            
+            inputs.forEach(input => {
+                const id = parseInt(input.getAttribute('data-id'));
+                const field = input.getAttribute('data-field');
+                const value = input.value.trim();
                 
-                // Если меняется имя, обновляем логин
-                if (field === 'name') {
-                    student.username = value.toLowerCase().replace(/\s+/g, '');
-                    // Перерисовываем таблицу, чтобы обновить логин
-                    renderStudentsList();
+                const student = window.students.find(s => s.id === id);
+                if (student && student[field] !== value) {
+                    student[field] = value;
+                    
+                    // Если изменилось имя, обновляем логин
+                    if (field === 'name') {
+                        student.username = generateUsername(value);
+                    }
+                    
+                    hasChanges = true;
                 }
-                
+            });
+            
+            if (hasChanges) {
                 saveToLocalStorage();
                 
                 // Автоматическое сохранение в GitHub
@@ -1168,8 +1185,22 @@
                     saveToGitHubWithRetry();
                 }
                 
-                showToast('Данные ученика обновлены', 'success');
+                // Перерисовываем список, чтобы обновить логины
+                renderStudentsList();
+                populateStudentDropdown();
+                populateStudentSelector();
+                
+                showToast('Изменения сохранены', 'success');
+            } else {
+                showToast('Нет изменений для сохранения', 'info');
             }
+        }
+        
+        function generateUsername(name) {
+            // Генерация логина на основе ФИО
+            return name.toLowerCase()
+                .replace(/\s+/g, '') // Удаляем пробелы
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Удаляем диакритические знаки
         }
         
         function populateStudentDropdown() {
@@ -1213,7 +1244,7 @@
             }
             
             // Генерируем логин и пароль
-            const username = name.toLowerCase().replace(/\s+/g, '');
+            const username = generateUsername(name);
             const password = 'password'; // Простой пароль по умолчанию
             
             const newStudent = {
@@ -1414,7 +1445,7 @@
                         }
                     }
                 }
-            );
+            });
         }
         
         function renderRadarChart(studentId) {
@@ -1463,7 +1494,7 @@
                         }
                     }
                 }
-            );
+            });
         }
         
         // Функции для работы с таблицей данных
