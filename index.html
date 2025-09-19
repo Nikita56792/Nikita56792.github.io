@@ -584,10 +584,7 @@
         }
         
         async function testGithubConnection() {
-            if (!githubConfig || !githubConfig.username || !githubConfig.token || !githubConfig.repo) {
-                showToast('Сначала настройте подключение к GitHub', 'warning');
-                return;
-            }
+
             
             try {
                 const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}`, {
