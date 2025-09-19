@@ -539,20 +539,13 @@
         function loadGithubConfig() {
             // Пробуем загрузить из localStorage
             const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY));
-            if (config) {
-                githubConfig = config;
-                document.getElementById('githubUsername').value = config.username || '';
-                document.getElementById('githubToken').value = config.token || '';
-                document.getElementById('githubRepo').value = config.repo || '';
-                document.getElementById('githubFile').value = config.file || 'data.json';
-            } else {
-                // Используем значения по умолчанию
+
                 githubConfig = DEFAULT_GITHUB_CONFIG;
                 document.getElementById('githubUsername').value = DEFAULT_GITHUB_CONFIG.username;
                 document.getElementById('githubToken').value = DEFAULT_GITHUB_CONFIG.token;
                 document.getElementById('githubRepo').value = DEFAULT_GITHUB_CONFIG.repo;
                 document.getElementById('githubFile').value = DEFAULT_GITHUB_CONFIG.file;
-            }
+            
         }
         
         function saveGithubConfig() {
