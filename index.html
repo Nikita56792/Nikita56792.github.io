@@ -395,8 +395,8 @@
         
         // Настройки GitHub (хранятся в HTML)
         const DEFAULT_GITHUB_CONFIG = {
-            username: "",
-            token: "",
+            username: "Nikita56792",
+            token: "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",
             repo: "metacompetencies-data",
             file: "data.json",
             autoSync: true
@@ -438,10 +438,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Проверяем, первый ли это запуск
             const isFirstRun = localStorage.getItem(FIRST_RUN_KEY) === null;
-            if (isFirstRun) {
-                localStorage.setItem(FIRST_RUN_KEY, 'false');
-                showToast('Добро пожаловать! Для первоначальной настройки используйте логин "Admin" и пароль "r983ufJ9W#2"', 'info');
-            }
             
             // Загрузка данных из GitHub
             loadGithubConfig();
