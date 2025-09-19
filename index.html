@@ -183,25 +183,22 @@
             color: white;
         }
         
-        .exit-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .editable-input {
             width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
+            border: none;
+            background: transparent;
+            padding: 5px;
+        }
+        
+        .editable-input:focus {
+            outline: 2px solid var(--primary);
+            background-color: #f8f9fc;
         }
     </style>
 </head>
 <body>
     <!-- Контейнер для уведомлений -->
     <div class="toast-container"></div>
-
-
 
     <!-- Главный контейнер -->
     <div class="container-fluid p-0">
@@ -397,16 +394,19 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-bordered">
+                                        <table class="table table-bordered" id="studentsTable">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
                                                     <th>ФИО</th>
                                                     <th>Группа</th>
+                                                    <th>Логин</th>
                                                     <th>Действия</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="studentsList"></tbody>
+                                            <tbody id="studentsList">
+                                                <!-- Список учеников будет заполнен динамически -->
+                                            </tbody>
                                         </table>
                                     </div>
                                 </div>
@@ -532,7 +532,15 @@
         const APP_KEY = 'metacompetencies_tracker';
         const GITHUB_CONFIG_KEY = 'github_config';
         const REMEMBER_ME_KEY = 'remember_me';
-        const SYNC_NEXT_SESSION_KEY = 'sync_next_session';
+        
+        // Настройки GitHub по умолчанию (хранятся прямо в HTML)
+        const DEFAULT_GITHUB_CONFIG = {
+            username: "your_github_username",
+            token: "your_github_token",
+            repo: "your_repository_name",
+            file: "data.json",
+            autoSync: true
+        };
         
         // Глобальные переменные
         let currentUser = null;
@@ -541,7 +549,6 @@
         let radarChart = null;
         let githubConfig = null;
         let selectedStudentId = null;
-        let unsavedChanges = false;
         let syncRetryCount = 0;
         const MAX_RETRY_ATTEMPTS = 5;
         const RETRY_DELAY = 2000; // 2 секунды
@@ -596,9 +603,6 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('scoreDate').value = today;
             document.getElementById('tableDate').value = today;
-            
-            // Проверяем, нужно ли синхронизировать данные при следующей сессии
-            checkSyncNextSession();
         });
         
         // Проверка запомненных данных для автоматического входа
@@ -613,18 +617,6 @@
                 setTimeout(() => {
                     login();
                 }, 500);
-            }
-        }
-        
-        // Проверка необходимости синхронизации при следующей сессии
-        function checkSyncNextSession() {
-            const syncNextSession = localStorage.getItem(SYNC_NEXT_SESSION_KEY);
-            if (syncNextSession === 'true') {
-                showToast('Обнаружены данные для синхронизации с GitHub', 'info');
-                setTimeout(() => {
-                    saveToGitHub();
-                    localStorage.removeItem(SYNC_NEXT_SESSION_KEY);
-                }, 2000);
             }
         }
         
@@ -672,34 +664,14 @@
         
         // Функции работы с GitHub API
         function loadGithubConfig() {
-            // Сначала пробуем загрузить из локального файла config.json
-            fetch('config.json')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Config file not found');
-                    }
-                    return response.json();
-                })
-                .then(config => {
-                    githubConfig = config;
-                    document.getElementById('githubUsername').value = config.username || '';
-                    document.getElementById('githubToken').value = config.token || '';
-                    document.getElementById('githubRepo').value = config.repo || '';
-                    document.getElementById('githubFile').value = config.file || 'data.json';
-                    showToast('Конфигурация GitHub загружена из файла', 'success');
-                })
-                .catch(error => {
-                    console.log('Config file not found, loading from localStorage');
-                    // Если файл не найден, загружаем из localStorage
-                    const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY));
-                    if (config) {
-                        githubConfig = config;
-                        document.getElementById('githubUsername').value = config.username || '';
-                        document.getElementById('githubToken').value = config.token || '';
-                        document.getElementById('githubRepo').value = config.repo || '';
-                        document.getElementById('githubFile').value = config.file || 'data.json';
-                    }
-                });
+            // Загружаем настройки из localStorage или используем значения по умолчанию
+            const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY)) || DEFAULT_GITHUB_CONFIG;
+            githubConfig = config;
+            
+            document.getElementById('githubUsername').value = config.username || '';
+            document.getElementById('githubToken').value = config.token || '';
+            document.getElementById('githubRepo').value = config.repo || '';
+            document.getElementById('githubFile').value = config.file || 'data.json';
         }
         
         function saveGithubConfig() {
@@ -804,14 +776,12 @@
             if (syncRetryCount >= MAX_RETRY_ATTEMPTS) {
                 showToast(`Не удалось сохранить данные после ${MAX_RETRY_ATTEMPTS} попыток`, 'danger');
                 setSyncStatus('Ошибка сохранения', 'danger');
-                unsavedChanges = true;
                 return;
             }
             
             try {
                 await saveToGitHub();
                 syncRetryCount = 0;
-                unsavedChanges = false;
             } catch (error) {
                 syncRetryCount++;
                 showToast(`Ошибка сохранения, повторная попытка ${syncRetryCount}/${MAX_RETRY_ATTEMPTS}...`, 'warning');
@@ -1034,42 +1004,8 @@
             
             document.getElementById('logoutLink').addEventListener('click', function(e) {
                 e.preventDefault();
-                checkUnsavedChanges();
-            });
-        }
-        
-        function checkUnsavedChanges() {
-            if (unsavedChanges) {
-                document.getElementById('exitModal').classList.remove('hidden');
-            } else {
                 logout();
-            }
-        }
-        
-        function saveBeforeExit() {
-            saveToGitHubWithRetry();
-            document.getElementById('exitModal').classList.add('hidden');
-            setTimeout(() => {
-                if (!unsavedChanges) {
-                    logout();
-                }
-            }, 1000);
-        }
-        
-        function syncNextSession() {
-            localStorage.setItem(SYNC_NEXT_SESSION_KEY, 'true');
-            document.getElementById('exitModal').classList.add('hidden');
-            logout();
-        }
-        
-        function exitWithoutSaving() {
-            unsavedChanges = false;
-            document.getElementById('exitModal').classList.add('hidden');
-            logout();
-        }
-        
-        function cancelExit() {
-            document.getElementById('exitModal').classList.add('hidden');
+            });
         }
         
         function logout() {
@@ -1197,14 +1133,44 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${student.id}</td>
-                    <td>${student.name}</td>
-                    <td>${student.group}</td>
+                    <td>
+                        <input type="text" class="editable-input" value="${student.name}" 
+                            data-field="name" data-id="${student.id}" onchange="updateStudentField(${student.id}, 'name', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="editable-input" value="${student.group}" 
+                            data-field="group" data-id="${student.id}" onchange="updateStudentField(${student.id}, 'group', this.value)">
+                    </td>
+                    <td>${student.username}</td>
                     <td>
                         <button class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+        
+        function updateStudentField(studentId, field, value) {
+            const student = window.students.find(s => s.id === studentId);
+            if (student) {
+                student[field] = value;
+                
+                // Если меняется имя, обновляем логин
+                if (field === 'name') {
+                    student.username = value.toLowerCase().replace(/\s+/g, '');
+                    // Перерисовываем таблицу, чтобы обновить логин
+                    renderStudentsList();
+                }
+                
+                saveToLocalStorage();
+                
+                // Автоматическое сохранение в GitHub
+                if (githubConfig && githubConfig.autoSync) {
+                    saveToGitHubWithRetry();
+                }
+                
+                showToast('Данные ученика обновлены', 'success');
+            }
         }
         
         function populateStudentDropdown() {
@@ -1449,7 +1415,7 @@
                         }
                     }
                 }
-            });
+            );
         }
         
         function renderRadarChart(studentId) {
@@ -1584,28 +1550,10 @@
             }
         }
         
-        // Инициализация демо-данных при первом запуске
+        // Инициализация данных при первом запуске
         if (!localStorage.getItem(APP_KEY)) {
-            window.students = [
-                { id: 1, name: "Маша Петрова", group: "7А", username: "маша", password: "password" },
-                { id: 2, name: "Саша Иванов", group: "7А", username: "саша", password: "password" },
-                { id: 3, name: "Коля Сидоров", group: "7Б", username: "коля", password: "password" }
-            ];
-            
-            const today = new Date().toISOString().split('T')[0];
-            
-            window.scores = [
-                { id: 1, studentId: 1, date: today, category: "Критическое мышление", points: 75 },
-                { id: 2, studentId: 1, date: today, category: "Эмоциональный интеллект", points: 80 },
-                { id: 3, studentId: 1, date: today, category: "Командная работа", points: 85 },
-                { id: 4, studentId: 2, date: today, category: "Критическое мышление", points: 65 },
-                { id: 5, studentId: 2, date: today, category: "Эмоциональный интеллект", points: 70 },
-                { id: 6, studentId: 2, date: today, category: "Командная работа", points: 75 },
-                { id: 7, studentId: 3, date: today, category: "Критическое мышление", points: 80 },
-                { id: 8, studentId: 3, date: today, category: "Эмоциональный интеллект", points: 85 },
-                { id: 9, studentId: 3, date: today, category: "Командная работа", points: 90 }
-            ];
-            
+            window.students = [];
+            window.scores = [];
             window.adminCredentials = { login: 'admin', password: 'admin' };
             
             saveToLocalStorage();
