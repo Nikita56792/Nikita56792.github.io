@@ -192,6 +192,17 @@
     </style>
 </head>
 <body>
+    <!-- Конфигурация GitHub (статичные данные, скрытые от пользователя) -->
+    <script id="github-config" type="application/json">
+        {
+            "username": "your_github_username",
+            "token": "your_github_token",
+            "repo": "metacompetencies-data",
+            "file": "data.json",
+            "autoSync": true
+        }
+    </script>
+
     <!-- Контейнер для уведомлений -->
     <div class="toast-container"></div>
 
@@ -250,8 +261,8 @@
                 <div id="settingsView" class="hidden">
                     <div class="row justify-content-center">
                         <div class="col-lg-8">
-                            <!-- Настройки GitHub -->
-                            <div class="card mb-4">
+                            <!-- Настройки GitHub (скрыты, так как настройки хранятся в HTML) -->
+                            <div class="card mb-4 hidden">
                                 <div class="card-header py-3">
                                     <h6 class="m-0 font-weight-bold text-primary">
                                         <i class="fab fa-github me-2"></i>Настройки GitHub API
@@ -423,7 +434,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Интерфейс ученика -->
                 <div id="studentView" class="hidden">
                     <!-- Выбор ученика (виден только преподавателям) -->
@@ -518,13 +528,42 @@
                     </div>
                 </div>
             </div>
+
+                <!-- Таблица всех данных для преподавателя -->
+                <div id="tableView" class="hidden">
+                    <div class="card mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Таблица всех данных</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Выберите дату</label>
+                                <input type="date" class="form-control" id="tableDate" onchange="loadTableData()">
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="dataTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ФИО</th>
+                                            <th>Группа</th>
+                                            <!-- Категории будут добавлены динамически -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Данные будут заполнены динамически -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         // Конфигурация приложения
         const APP_KEY = 'metacompetencies_tracker';
-        const GITHUB_CONFIG_KEY = 'github_config';
         const REMEMBER_ME_KEY = 'remember_me';
         
         // Глобальные переменные
@@ -538,15 +577,6 @@
         let syncRetryCount = 0;
         const MAX_RETRY_ATTEMPTS = 5;
         const RETRY_DELAY = 2000; // 2 секунды
-        
-        // Настройки GitHub (хранятся в HTML)
-        const DEFAULT_GITHUB_CONFIG = {
-            username: "your_github_username",
-            token: "your_github_token",
-            repo: "metacompetencies-data",
-            file: "data.json",
-            autoSync: true
-        };
         
         // Функции для работы с UTF-8 и Base64
         function utf8ToBase64(str) {
@@ -582,9 +612,14 @@
         
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
+            // Загрузка конфигурации GitHub из HTML
+            loadGithubConfigFromHTML();
+            
             // Загрузка данных из локального хранилища
             loadFromLocalStorage();
-            loadGithubConfig();
+            
+            // Автоматическая загрузка данных из GitHub
+            loadFromGitHub();
             
             // Проверка запомненных данных для автоматического входа
             checkRememberedLogin();
@@ -600,6 +635,35 @@
             document.getElementById('tableDate').value = today;
         });
         
+        // Загрузка конфигурации GitHub из HTML
+        function loadGithubConfigFromHTML() {
+            try {
+                const configElement = document.getElementById('github-config');
+                if (configElement) {
+                    githubConfig = JSON.parse(configElement.textContent);
+                    console.log("GitHub config loaded from HTML:", githubConfig);
+                } else {
+                    console.error("GitHub config element not found in HTML");
+                    githubConfig = {
+                        username: "your_github_username",
+                        token: "your_github_token",
+                        repo: "metacompetencies-data",
+                        file: "data.json",
+                        autoSync: true
+                    };
+                }
+            } catch (e) {
+                console.error("Error loading GitHub config from HTML:", e);
+                githubConfig = {
+                    username: "your_github_username",
+                    token: "your_github_token",
+                    repo: "metacompetencies-data",
+                    file: "data.json",
+                    autoSync: true
+                };
+            }
+        }
+        
         // Проверка запомненных данных для автоматического входа
         function checkRememberedLogin() {
             const remembered = JSON.parse(localStorage.getItem(REMEMBER_ME_KEY));
@@ -607,11 +671,6 @@
                 document.getElementById('username').value = remembered.username;
                 document.getElementById('password').value = remembered.password;
                 document.getElementById('rememberMe').checked = true;
-                
-                // Автоматический вход
-                setTimeout(() => {
-                    login();
-                }, 500);
             }
         }
         
@@ -658,51 +717,9 @@
         }
         
         // Функции работы с GitHub API
-        function loadGithubConfig() {
-            // Пробуем загрузить из localStorage
-            const config = JSON.parse(localStorage.getItem(GITHUB_CONFIG_KEY));
-            if (config) {
-                githubConfig = config;
-                document.getElementById('githubUsername').value = config.username || '';
-                document.getElementById('githubToken').value = config.token || '';
-                document.getElementById('githubRepo').value = config.repo || '';
-                document.getElementById('githubFile').value = config.file || 'data.json';
-            } else {
-                // Используем значения по умолчанию
-                githubConfig = DEFAULT_GITHUB_CONFIG;
-                document.getElementById('githubUsername').value = DEFAULT_GITHUB_CONFIG.username;
-                document.getElementById('githubToken').value = DEFAULT_GITHUB_CONFIG.token;
-                document.getElementById('githubRepo').value = DEFAULT_GITHUB_CONFIG.repo;
-                document.getElementById('githubFile').value = DEFAULT_GITHUB_CONFIG.file;
-            }
-        }
-        
-        function saveGithubConfig() {
-            const username = document.getElementById('githubUsername').value;
-            const token = document.getElementById('githubToken').value;
-            const repo = document.getElementById('githubRepo').value;
-            const file = document.getElementById('githubFile').value;
-            
-            if (!username || !token || !repo || !file) {
-                showToast('Заполните все поля конфигурации GitHub', 'warning');
-                return;
-            }
-            
-            githubConfig = {
-                username,
-                token,
-                repo,
-                file,
-                autoSync: true
-            };
-            
-            localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(githubConfig));
-            showToast('Настройки GitHub сохранены', 'success');
-        }
-        
         async function testGithubConnection() {
             if (!githubConfig || !githubConfig.username || !githubConfig.token || !githubConfig.repo) {
-                showToast('Сначала настройте подключение к GitHub', 'warning');
+                showToast('GitHub не настроен', 'warning');
                 return;
             }
             
@@ -726,7 +743,7 @@
         
         async function loadFromGitHub() {
             if (!githubConfig || !githubConfig.username || !githubConfig.token || !githubConfig.repo || !githubConfig.file) {
-                showToast('Сначала настройте подключение к GitHub', 'warning');
+                showToast('GitHub не настроен', 'warning');
                 return;
             }
             
@@ -1021,6 +1038,9 @@
             
             currentUser = null;
             showLoginView();
+            
+            // При выходе загружаем свежие данные из GitHub
+            loadFromGitHub();
         }
         
         // Функции аутентификации
@@ -1511,7 +1531,15 @@
             tbody.innerHTML = '';
             
             // Получаем все категории
-            const categories = [...new Set(window.scores.map(score => score.category))].sort();
+            const categories = [
+                'Критическое мышление',
+                'Эмоциональный интеллект',
+                'Командная работа',
+                'Креативность',
+                'Цифровая грамотность',
+                'Проектное мышление',
+                'Рефлексия'
+            ];
             
             // Добавляем заголовки для категорий
             categories.forEach(category => {
