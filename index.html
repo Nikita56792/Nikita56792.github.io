@@ -655,7 +655,11 @@
                 setSyncStatus('Ошибка подключения', 'danger');
             }
         }
-        
+        async function loadFromYandexDisk() {
+            if (!yandexToken) {
+                showToast('Сначала авторизуйтесь в Yandex', 'warning');
+                return;
+        }
         try {
             setSyncStatus('Синхронизация с Yandex Disk...', 'info');
             document.getElementById('loginStatus').textContent = 'Загрузка данных...';
