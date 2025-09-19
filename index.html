@@ -605,10 +605,6 @@
         }
         
         async function loadFromGitHub() {
-            if (!githubConfig || !githubConfig.username || !githubConfig.token || !githubConfig.repo || !githubConfig.file) {
-                showToast('Сначала настройте подключение к GitHub', 'warning');
-                return;
-            }
             
             try {
                 setSyncStatus('Синхронизация с GitHub...', 'info');
