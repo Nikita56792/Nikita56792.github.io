@@ -535,9 +535,9 @@
         
         // Настройки GitHub по умолчанию (хранятся прямо в HTML)
         const DEFAULT_GITHUB_CONFIG = {
-            username: "Nikita56792",
-            token: "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",
-            repo: "metacompetencies-data",
+            username: "your_github_username",
+            token: "your_github_token",
+            repo: "your_repository_name",
             file: "data.json",
             autoSync: true
         };
@@ -857,7 +857,7 @@
             syncStatus.innerHTML = `<span class="sync-status sync-${type}">${message}</span>`;
         }
         
-        // Функции работы с локальным хранилищем
+        // Функции работы с локальным хранилище
         function saveToLocalStorage() {
             const data = {
                 students: window.students || [],
@@ -1040,15 +1040,14 @@
             }
             
             // Проверяем вход администратора
-            if (username === (window.adminCredentials?.login || 'admin')) {
-                if (password === (window.adminCredentials?.password || 'admin')) {
-                    currentUser = { name: 'Администратор', isAdmin: true };
-                    updateSidebarMenu();
-                    showTeacherView();
-                    showToast('Вход выполнен как администратор', 'success');
-                } else {
-                    showToast('Неверный пароль администратора', 'danger');
-                }
+            const adminLogin = window.adminCredentials ? window.adminCredentials.login : 'admin';
+            const adminPassword = window.adminCredentials ? window.adminCredentials.password : 'admin';
+            
+            if (username === adminLogin && password === adminPassword) {
+                currentUser = { name: 'Администратор', isAdmin: true };
+                updateSidebarMenu();
+                showTeacherView();
+                showToast('Вход выполнен как администратор', 'success');
                 return;
             }
             
@@ -1464,7 +1463,7 @@
                         }
                     }
                 }
-            });
+            );
         }
         
         // Функции для работы с таблицей данных
