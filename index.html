@@ -2,25 +2,19 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Yandex.Disk + Neon DB Test</title>
+<title>Netlify + Neon DB Test</title>
 <style>
 body { font-family: system-ui; padding:20px; background:#f7f7f9; }
 button { margin:5px 0; padding:10px 15px; }
 pre { background:#fff; padding:10px; border-radius:6px; max-height:300px; overflow:auto; }
-input { width:400px; }
 </style>
 </head>
 <body>
-<h1>Yandex.Disk + Neon DB Test</h1>
+<h1>Netlify + Neon DB Test</h1>
 
-<p>OAuth Yandex Token:</p>
-<input id="token" type="text" placeholder="OAuth token" />
-
-<h2>Шаги теста</h2>
 <button onclick="createData()">1. Создать data.json</button>
 <button onclick="saveDB()">2. Сохранить в Neon DB</button>
-<button onclick="uploadDisk()">3. Загрузить на Яндекс.Диск</button>
-<button onclick="downloadDisk()">4. Скачать с Яндекс.Диска</button>
+<button onclick="loadDB()">3. Скачать из Neon DB</button>
 
 <h2>Логи</h2>
 <pre id="log"></pre>
@@ -32,7 +26,7 @@ function log(msg){ LOG.textContent += msg+"\n"; }
 
 function createData(){
     DATA_JSON = {
-        project:"yandex_disk_test",
+        project:"netlify_neon_test",
         author:"Nikita",
         items:[{id:1,name:"alpha"},{id:2,name:"beta"}]
     };
@@ -44,34 +38,20 @@ async function saveDB(){
     const res = await fetch("/.netlify/functions/api", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ action:"save-db", data:DATA_JSON })
+        body: JSON.stringify({ action:"save", data:DATA_JSON })
     });
     const json = await res.json();
-    log("Neon DB: "+JSON.stringify(json));
+    log("Сохранение в Neon DB: "+JSON.stringify(json));
 }
 
-async function uploadDisk(){
-    const token = document.getElementById("token").value.trim();
-    if(!token){ log("Введите OAuth token"); return; }
+async function loadDB(){
     const res = await fetch("/.netlify/functions/api", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ action:"upload", token, data:DATA_JSON })
+        body: JSON.stringify({ action:"load" })
     });
     const json = await res.json();
-    log("Upload: "+JSON.stringify(json));
-}
-
-async function downloadDisk(){
-    const token = document.getElementById("token").value.trim();
-    if(!token){ log("Введите OAuth token"); return; }
-    const res = await fetch("/.netlify/functions/api", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ action:"download", token })
-    });
-    const json = await res.json();
-    log("Download: "+JSON.stringify(json,null,2));
+    log("Загрузка из Neon DB:\n"+JSON.stringify(json.data,null,2));
 }
 </script>
 </body>
