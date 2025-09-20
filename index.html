@@ -500,7 +500,7 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">Выберите дату</label>
+                                <label class="form-label">Выберите дата</label>
                                 <input type="date" class="form-control" id="tableDate" onchange="loadTableData()">
                             </div>
                             <div class="table-responsive">
@@ -528,7 +528,7 @@
         // Конфигурация приложения
         const APP_KEY = 'metacompetencies_tracker';
         const REMEMBER_ME_KEY = 'remember_me';
-        const YANDEX_TOKEN_KEY = 'y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg';
+        const YANDEX_TOKEN_KEY = 'yandex_disk_token';
         
         // Глобальные переменные
         let currentUser = null;
@@ -560,8 +560,9 @@
             'Рефлексия'
         ];
         
+        localStorage.setItem(YANDEX_TOKEN_KEY, "y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg");
         // Токен Yandex Disk
-        let yandexToken = "y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg";
+        let yandexToken = localStorage.getItem(YANDEX_TOKEN_KEY) || null;
         
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
@@ -612,7 +613,7 @@
             const accessToken = urlParams.get('access_token');
             
             if (accessToken) {
-                
+                yandexToken = accessToken;
                 localStorage.setItem(YANDEX_TOKEN_KEY, yandexToken);
                 document.getElementById('authStatus').innerHTML = '<div class="alert alert-success">Авторизация выполнена успешно</div>';
                 
@@ -722,7 +723,7 @@
                 const encodedPath = encodeURIComponent(YANDEX_CONFIG.filePath);
                 const response = await fetch(`https://cloud-api.yandex.net/v1/disk/resources/download?path=${encodedPath}`, {
                     headers: {
-                        'Authorization': `OAuth ${"y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg"}`,
+                        'Authorization': `OAuth ${yandexToken}`,
                         'Accept': 'application/json'
                     }
                 });
@@ -741,10 +742,10 @@
                 const data = await response.json();
                 const downloadUrl = data.href;
                 
-                // Скачиваем файл - ИСПРАВЛЕНИЕ: добавляем Authorization header
+                // Скачиваем файл с использованием токена
                 const fileResponse = await fetch(downloadUrl, {
                     headers: {
-                        'Authorization': `OAuth ${"y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg"}`
+                        'Authorization': `OAuth ${yandexToken}`
                     }
                 });
                 
@@ -752,16 +753,7 @@
                     throw new Error(`Ошибка загрузки файла: ${fileResponse.status}`);
                 }
                 
-                // Читаем содержимое файла как текст
-                const fileContent = await fileResponse.text();
-                
-                // Парсим JSON
-                let content;
-                try {
-                    content = JSON.parse(fileContent);
-                } catch (e) {
-                    throw new Error('Файл на Yandex Disk не является валидным JSON');
-                }
+                const content = await fileResponse.json();
                 
                 // Обновляем данные в приложении
                 window.students = content.students || [];
@@ -788,7 +780,6 @@
                     }
                 }
             } catch (error) {
-                console.error('Ошибка загрузки:', error);
                 showToast('Ошибка загрузки данных из Yandex Disk: ' + error.message, 'danger');
                 setSyncStatus('Ошибка загрузки', 'danger');
                 document.getElementById('loginStatus').textContent = 'Ошибка загрузки данных';
@@ -869,7 +860,7 @@
             syncStatus.innerHTML = `<span class="sync-status sync-${type}">${message}</span>`;
         }
         
-        // Функции работы с локальным хранилище
+        // Функции работы с локальным хранилищем
         function saveToLocalStorage() {
             const data = {
                 students: window.students || [],
@@ -1513,7 +1504,7 @@
             thead.innerHTML = '<th>ФИО</th><th>Группа</th>';
             tbody.innerHTML = '';
             
-            // Добавляем заголовки для категорий
+            // Добавляем заголовки для категории
             CATEGORIES.forEach(category => {
                 thead.innerHTML += `<th>${category}</th>`;
             });
