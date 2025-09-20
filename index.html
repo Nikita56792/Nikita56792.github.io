@@ -1,58 +1,266 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>Netlify + Neon DB Test</title>
-<style>
-body { font-family: system-ui; padding:20px; background:#f7f7f9; }
-button { margin:5px 0; padding:10px 15px; }
-pre { background:#fff; padding:10px; border-radius:6px; max-height:300px; overflow:auto; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>neonDB | Тестовая база данных</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background: #0a0a1a;
+            color: #00f3ff;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: 3px;
+            margin: 20px 0;
+        }
+        
+        .neon-border {
+            border: 2px solid #00f3ff;
+            box-shadow: 0 0 15px #00f3ff, inset 0 0 15px #00f3ff;
+            border-radius: 10px;
+            padding: 30px;
+            background: rgba(10, 10, 30, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px #00f3ff;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            background: #0f0f2d;
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            font-size: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+        
+        button {
+            background: transparent;
+            color: #00f3ff;
+            border: 2px solid #00f3ff;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00f3ff;
+        }
+        
+        button:hover {
+            background: #00f3ff;
+            color: #0a0a1a;
+            box-shadow: 0 0 15px #00f3ff;
+        }
+        
+        .data-output {
+            margin-top: 30px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 30, 0.5);
+            border: 1px solid #0077ff;
+        }
+        
+        .record {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #0077ff;
+        }
+        
+        .status {
+            height: 20px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #00ff9d;
+            text-shadow: 0 0 10px #00ff9d;
+        }
+        
+        .error {
+            color: #ff3366;
+            text-shadow: 0 0 10px #ff3366;
+        }
+        
+        footer {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        /* Скроллбар в neon-стиле */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0077ff;
+        }
+    </style>
 </head>
 <body>
-<h1>Netlify + Neon DB Test</h1>
+    <div class="container">
+        <header>
+            <h1>neonDB</h1>
+            <p>Тестовая система записи и чтения данных</p>
+        </header>
+        
+        <div class="neon-border">
+            <div class="status" id="status"></div>
+            
+            <div class="form-group">
+                <label for="name">Имя</label>
+                <input type="text" id="name" placeholder="Введите ваше имя">
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Сообщение</label>
+                <textarea id="message" rows="4" placeholder="Введите сообщение для сохранения"></textarea>
+            </div>
+            
+            <button id="saveBtn">Сохранить данные</button>
+            <button id="loadBtn">Загрузить данные</button>
+            
+            <div class="data-output" id="dataOutput">
+                Здесь будут отображаться сохраненные записи...
+            </div>
+        </div>
+        
+        <footer>
+            <p>neonDB Test System | Работает полностью в браузере (localStorage)</p>
+        </footer>
+    </div>
 
-<button onclick="createData()">1. Создать data.json</button>
-<button onclick="saveDB()">2. Сохранить в Neon DB</button>
-<button onclick="loadDB()">3. Скачать из Neon DB</button>
-
-<h2>Логи</h2>
-<pre id="log"></pre>
-
-<script>
-const LOG = document.getElementById("log");
-let DATA_JSON = null;
-function log(msg){ LOG.textContent += msg+"\n"; }
-
-function createData(){
-    DATA_JSON = {
-        project:"netlify_neon_test",
-        author:"Nikita",
-        items:[{id:1,name:"alpha"},{id:2,name:"beta"}]
-    };
-    log("data.json создан:\n"+JSON.stringify(DATA_JSON,null,2));
-}
-
-async function saveDB(){
-    if(!DATA_JSON){ log("Сначала создайте data.json"); return; }
-    const res = await fetch("/.netlify/functions/api", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ action:"save", data:DATA_JSON })
-    });
-    const json = await res.json();
-    log("Сохранение в Neon DB: "+JSON.stringify(json));
-}
-
-async function loadDB(){
-    const res = await fetch("/.netlify/functions/api", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ action:"load" })
-    });
-    const json = await res.json();
-    log("Загрузка из Neon DB:\n"+JSON.stringify(json.data,null,2));
-}
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const saveBtn = document.getElementById('saveBtn');
+            const loadBtn = document.getElementById('loadBtn');
+            const nameInput = document.getElementById('name');
+            const messageInput = document.getElementById('message');
+            const dataOutput = document.getElementById('dataOutput');
+            const status = document.getElementById('status');
+            
+            // Инициализация
+            loadRecords();
+            
+            // Сохранение данных
+            saveBtn.addEventListener('click', () => {
+                const name = nameInput.value.trim();
+                const message = messageInput.value.trim();
+                
+                if (!name || !message) {
+                    updateStatus('Ошибка: Заполните все поля!', 'error');
+                    return;
+                }
+                
+                const record = {
+                    id: Date.now(),
+                    name: name,
+                    message: message,
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                const records = getRecords();
+                records.push(record);
+                localStorage.setItem('neonDB_records', JSON.stringify(records));
+                
+                // Очистка формы
+                nameInput.value = '';
+                messageInput.value = '';
+                
+                updateStatus('Данные успешно сохранены!', 'success');
+                loadRecords();
+            });
+            
+            // Загрузка данных
+            loadBtn.addEventListener('click', loadRecords);
+            
+            function getRecords() {
+                const records = localStorage.getItem('neonDB_records');
+                return records ? JSON.parse(records) : [];
+            }
+            
+            function loadRecords() {
+                const records = getRecords();
+                
+                if (records.length === 0) {
+                    dataOutput.innerHTML = '<div class="record">Записей не найдено</div>';
+                    return;
+                }
+                
+                dataOutput.innerHTML = '';
+                records.reverse().forEach(record => {
+                    const recordElement = document.createElement('div');
+                    recordElement.className = 'record';
+                    recordElement.innerHTML = `
+                        <strong>${record.name}</strong> <span style="color:#0077ff">[${record.timestamp}]</span>
+                        <p>${record.message}</p>
+                    `;
+                    dataOutput.appendChild(recordElement);
+                });
+            }
+            
+            function updateStatus(message, type) {
+                status.textContent = message;
+                status.className = 'status ' + type;
+                
+                setTimeout(() => {
+                    status.textContent = '';
+                    status.className = 'status';
+                }, 3000);
+            }
+        });
+    </script>
 </body>
 </html>
