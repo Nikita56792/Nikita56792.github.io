@@ -612,7 +612,7 @@
             const accessToken = urlParams.get('access_token');
             
             if (accessToken) {
-                yandexToken = accessToken;
+                
                 localStorage.setItem(YANDEX_TOKEN_KEY, yandexToken);
                 document.getElementById('authStatus').innerHTML = '<div class="alert alert-success">Авторизация выполнена успешно</div>';
                 
