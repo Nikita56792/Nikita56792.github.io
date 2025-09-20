@@ -500,7 +500,7 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">Выберите дата</label>
+                                <label class="form-label">Выберите дату</label>
                                 <input type="date" class="form-control" id="tableDate" onchange="loadTableData()">
                             </div>
                             <div class="table-responsive">
@@ -560,9 +560,8 @@
             'Рефлексия'
         ];
         
-        localStorage.setItem(YANDEX_TOKEN_KEY, "y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg");
         // Токен Yandex Disk
-        let yandexToken = localStorage.getItem(YANDEX_TOKEN_KEY) || null;
+        let yandexToken = "y0__xDayrSUBhjisDogzcLXuBRvMubZB7lbgKDKPZKKhJDmt2SoAg";
         
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
@@ -742,7 +741,7 @@
                 const data = await response.json();
                 const downloadUrl = data.href;
                 
-                // Скачиваем файл с использованием токена
+                // Скачиваем файл
                 const fileResponse = await fetch(downloadUrl, {
                     headers: {
                         'Authorization': `OAuth ${yandexToken}`
@@ -1504,7 +1503,7 @@
             thead.innerHTML = '<th>ФИО</th><th>Группа</th>';
             tbody.innerHTML = '';
             
-            // Добавляем заголовки для категории
+            // Добавляем заголовки для категорий
             CATEGORIES.forEach(category => {
                 thead.innerHTML += `<th>${category}</th>`;
             });
